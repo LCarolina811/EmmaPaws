@@ -1,8 +1,27 @@
-# Plantilla del Proyecto del Seminario
+# EmmaPaws — Ecommerce de Juguetes para Mascotas
 
 | Código | Nombre | Correo |
 |:---|:---|:---|
-| — | Javier Jose Gaviria | jjgm0226@gmail.com |
+| 1143875526 | Javier Jose Gaviria Morales | javier.gaviria.5526@miremington.edu.co |
+| 1005945264 | Luz Carolina Hernandez Vega | luz.hernandez.5264@miremington.edu.co |
+
+---
+
+## Descripción del Proyecto
+
+**EmmaPaws** es un ecommerce ultra sencillo para la venta de juguetes para mascotas, implementado con arquitectura de microservicios. El proyecto demuestra comunicación entre servicios independientes, uso de distintos tipos de bases de datos y orquestación con Docker.
+
+---
+
+## Arquitectura
+
+```
+Frontend (Flask :5000)
+    └── API Gateway (FastAPI :8000)
+            ├── catalog-service  (:8002) → PostgreSQL  — Catálogo de productos
+            ├── orders-service   (:8003) → MongoDB     — Órdenes de compra
+            └── reviews-service  (:8004) → PostgreSQL  — Reseñas de productos
+```
 
 ---
 
@@ -15,57 +34,117 @@
 * Contenerizar aplicaciones con Docker.
 * Orquestar la infraestructura con Docker Compose.
 
-## Proceso de Desarrollo
+---
 
-Sigue estos pasos para comenzar tu proyecto:
+## Requisitos Previos
 
-1. Fork del repositorio https://github.com/UR-CC/plantilla-seminario, con un nombre relacionado con el proyecto de cada grupo.
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y corriendo.
+* Git instalado.
 
-2. Clonar el repositorio base:
+---
 
-    ```bash
-    git clone https://github.com/USUARIO/nuevo-nombre.git 
-    cd nuevo-nombre
-    ```
+## Clonar y Ejecutar el Proyecto
 
-2. Configuración inicial:
-    Crea el archivo de variables de entorno a partir del ejemplo.
+### 1. Clonar el repositorio
 
-    ```bash
-    cp .env.example .env
-    ```
+```bash
+git clone https://github.com/JavierJGaviria/EmmaPaws.git
+cd EmmaPaws
+```
 
-    **Nota**: Asegúrate de configurar las variables de entorno en el archivo `.env` si es necesario.
+### 2. Crear el archivo de variables de entorno
 
-3. Familiarízate con la estructura del proyecto:
-    
-    * `frontend/`: La aplicación web principal (Flask).
-    * `api-gateway/`: El enrutador de peticiones (FastAPI).
-    * `services/`: Directorio donde desarrollarás tus microservicios (FastAPI).
+**Linux / macOS:**
+```bash
+cp _env.example .env
+```
 
-    **Nota**: Hay comentarios `# TODO` que brindan indicaciones de lo que debe implementarse.
+**Windows (PowerShell):**
+```powershell
+Copy-Item _env.example .env
+```
 
-4. Selecciona uno de los temas propuestos.
+> No es necesario modificar el `.env` para ejecutar en local con Docker.
 
-5. Renombra los directorios de los microservicios `service[123]` según tu tema en la carpeta `services/`.
-
-6. Revisa los archivos `main.py`, `Dockerfile`, y `requirements.txt` para cada uno de los microservicios.
-
-7. Ajusta el archivo `docker-compose.yml` de tal forma que los servicios y bases de datos coincidan con tu tema.
-
-8. Implementa la lógica de cada microservicio siguiendo los requisitos de tu tema.
-
-    * Define e implementa tu modelo de datos.
-    * Crea los endpoints de las API.
-    * Implementa la comunicación entre servicios.
-    * Conecta cada servicio a su base de datos.
-
-### Ejecutar el Proyecto
-
-Una vez que tengas tus servicios configurados, puedes levantar todo el stack con un solo comando:
+### 3. Levantar todo el stack
 
 ```bash
 docker-compose up --build
 ```
 
-Esto construirá las imágenes y ejecutará todos los contenedores. Podrás acceder al frontend en `http://localhost:5000` y al API Gateway en `http://localhost:8000`.
+> La primera vez tarda unos minutos mientras descarga las imágenes de Python, PostgreSQL y MongoDB.
+
+### 4. Verificar que todos los servicios están corriendo
+
+```bash
+docker-compose ps
+```
+
+Deberías ver 10 contenedores con estado `Up`. Las bases de datos PostgreSQL aparecen como `(healthy)`.
+
+### 5. Detener el proyecto
+
+```bash
+docker-compose down
+```
+
+> Para borrar también los datos almacenados en las bases de datos:
+> ```bash
+> docker-compose down -v
+> ```
+
+---
+
+## Probar la Aplicación
+
+### Desde el navegador
+
+| URL | Descripción |
+|:---|:---|
+| `http://localhost:5000` | Frontend — Catálogo de juguetes |
+| `http://localhost:5000/admin/products` | Panel para agregar productos |
+| `http://localhost:8000/docs` | Swagger del API Gateway |
+| `http://localhost:8002/docs` | Swagger del Catálogo |
+| `http://localhost:8003/docs` | Swagger de Órdenes |
+| `http://localhost:8004/docs` | Swagger de Reseñas |
+
+### Flujo de prueba sugerido
+
+1. Ir a `http://localhost:5000/admin/products` y agregar un juguete (nombre, precio, categoría, stock).
+2. Ir al catálogo `http://localhost:5000` y verificar que el producto aparece.
+3. Hacer clic en un producto → **"Ver detalles"** → **"Pedir ahora"**.
+4. Ingresar un email y cantidad → confirmar el pedido.
+5. Volver al detalle del producto y dejar una reseña con calificación (1–5 estrellas).
+
+### Probar la API directamente (Swagger)
+
+Ir a `http://localhost:8002/docs` y ejecutar:
+
+```
+POST /api/v1/products/
+{
+  "name": "Peluchito Suave",
+  "description": "Juguete de tela para perros pequeños",
+  "price": 12.99,
+  "stock": 30,
+  "category": "Peluches"
+}
+```
+
+---
+
+## Estructura del Proyecto
+
+```
+EmmaPaws/
+├── frontend/                  # Aplicación web (Flask)
+├── api-gateway/               # Enrutador de peticiones (FastAPI)
+├── services/
+│   ├── authentication/        # Servicio de autenticación (MongoDB)
+│   ├── catalog-service/       # Catálogo de productos (PostgreSQL)
+│   ├── orders-service/        # Órdenes de compra (MongoDB)
+│   └── reviews-service/       # Reseñas de productos (PostgreSQL)
+├── docker-compose.yml
+├── _env.example
+└── .env
+```
