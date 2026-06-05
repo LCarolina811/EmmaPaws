@@ -2,8 +2,7 @@
 
 | Código | Nombre | Correo |
 |:---|:---|:---|
-| 542378923 | Fulanito de Tal | fulanito.tal@miuniremington.edu.co |
-| 542378923 | Fulanito de Tal | fulanito.tal@miuniremington.edu.co |
+| — | Javier Jose Gaviria | jjgm0226@gmail.com |
 
 ---
 

@@ -15,9 +15,16 @@ services:
     container_name: api-gateway
     ports:
       - "8000:8000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - CATALOG_SERVICE_URL=http://catalog-service:8002
+      - ORDERS_SERVICE_URL=http://orders-service:8003
+      - REVIEWS_SERVICE_URL=http://reviews-service:8004
     depends_on:
       - auth-service
-    # Aquí puedes agregar los otros servicios base
+      - catalog-service
+      - orders-service
+      - reviews-service
 
   # Microservicio de Autenticación
   auth-service:
@@ -30,7 +37,7 @@ services:
     depends_on:
       - auth-db
 
-  # Base de datos para el servicio de autenticación
+  # Base de datos para Autenticación (MongoDB)
   auth-db:
     image: mongo:latest
     container_name: auth-db
@@ -39,35 +46,78 @@ services:
     volumes:
       - auth_data:/data/db
 
-  # --- Plantillas de Microservicios ---
-  # TODO: Copiar y modificar "service1" para cada servicio según el tema seleccionado
-  
-  # Microservicio de Nombre_del_microservicio
-  service1-service:
-     build: ./services/service1 
-     container_name: service1-service
-     ports:
-       - "8002:8002"
-     environment:
-       - DATABASE_URL=postgresql://user:password@service1-db:5432/service1_db
-     depends_on:
-       - service1-db
+  # Microservicio de Catálogo de Productos
+  catalog-service:
+    build: ./services/catalog-service
+    container_name: catalog-service
+    ports:
+      - "8002:8002"
+    environment:
+      - DATABASE_URL=postgresql://user:password@catalog-db:5432/catalog_db
+    depends_on:
+      - catalog-db
 
-  # Base de datos para el servicio1
-  service1-db:
-     image: postgres:latest
-     container_name: service1-db
-     environment:
-       - POSTGRES_USER=user
-       - POSTGRES_PASSWORD=password
-       - POSTGRES_DB=service1_db
-     ports:
-       - "5432:5432"
-     volumes:
-       - service1_data:/var/lib/postgresql/data
+  # Base de datos para Catálogo (PostgreSQL)
+  catalog-db:
+    image: postgres:latest
+    container_name: catalog-db
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=catalog_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - catalog_data:/var/lib/postgresql/data
+
+  # Microservicio de Órdenes de Compra
+  orders-service:
+    build: ./services/orders-service
+    container_name: orders-service
+    ports:
+      - "8003:8003"
+    environment:
+      - DATABASE_URL=mongodb://orders-db:27017/orders_db
+      - CATALOG_SERVICE_URL=http://catalog-service:8002
+    depends_on:
+      - orders-db
+      - catalog-service
+
+  # Base de datos para Órdenes (MongoDB)
+  orders-db:
+    image: mongo:latest
+    container_name: orders-db
+    ports:
+      - "27018:27017"
+    volumes:
+      - orders_data:/data/db
+
+  # Microservicio de Reseñas de Productos
+  reviews-service:
+    build: ./services/reviews-service
+    container_name: reviews-service
+    ports:
+      - "8004:8004"
+    environment:
+      - DATABASE_URL=postgresql://user:password@reviews-db:5432/reviews_db
+    depends_on:
+      - reviews-db
+
+  # Base de datos para Reseñas (PostgreSQL)
+  reviews-db:
+    image: postgres:latest
+    container_name: reviews-db
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=reviews_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - reviews_data:/var/lib/postgresql/data
 
 volumes:
   auth_data:
-  service1_data:
-  service2_data:
-  service3_data:
+  catalog_data:
+  orders_data:
+  reviews_data:
