@@ -3,70 +3,70 @@ from fastapi.middleware.cors import CORSMiddleware
 import requests
 import os
 
-# Define la instancia de la aplicación FastAPI.
-app = FastAPI(title="API Gateway Taller Microservicios")
+app = FastAPI(title="EmmaPaws — API Gateway")
 
-# Configura CORS (Cross-Origin Resource Sharing).
-# Esto es esencial para permitir que el frontend se comunique con el gateway.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permite peticiones desde cualquier origen (ajustar en producción)
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Crea un enrutador para las peticiones de los microservicios.
 router = APIRouter(prefix="/api/v1")
 
-# Define los microservicios y sus URLs.
-# La URL debe coincidir con el nombre del servicio definido en docker-compose.yml.
-# El puerto debe ser el del contenedor (ej. auth-service:8001).
 SERVICES = {
-    "auth": os.getenv("AUTH_SERVICE_URL", "http://auth-service:8001"),
-    # TODO: Agrega los URLs de los otros microservicios de tu tema.
-    # "service1_name": os.getenv("NAME1_SERVICE_URL", "http://service1-service:8002"),
-    # "service2_name": os.getenv("NAME2_SERVICE_URL", "http://service2-service:8003"),
-    # "service3_name": os.getenv("NAME3_SERVICE_URL", "http://service3-service:8004"),
+    "auth":    os.getenv("AUTH_SERVICE_URL",    "http://auth-service:8001"),
+    "catalog": os.getenv("CATALOG_SERVICE_URL", "http://catalog-service:8002"),
+    "orders":  os.getenv("ORDERS_SERVICE_URL",  "http://orders-service:8003"),
+    "reviews": os.getenv("REVIEWS_SERVICE_URL", "http://reviews-service:8004"),
 }
 
-# TODO: Implementa una ruta genérica para redirigir peticiones GET.
+
+def _forward(method: str, service_name: str, path: str, request: Request, json_body=None):
+    if service_name not in SERVICES:
+        raise HTTPException(status_code=404, detail=f"Servicio '{service_name}' no encontrado.")
+    url = f"{SERVICES[service_name]}/{path}"
+    try:
+        response = requests.request(
+            method,
+            url,
+            params=request.query_params,
+            json=json_body,
+        )
+        response.raise_for_status()
+        if response.status_code == 204:
+            return {}
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Error al contactar '{service_name}': {e}")
+
+
 @router.get("/{service_name}/{path:path}")
 async def forward_get(service_name: str, path: str, request: Request):
-    if service_name not in SERVICES:
-        raise HTTPException(status_code=404, detail=f"Service '{service_name}' not found.")
-    
-    service_url = f"{SERVICES[service_name]}/{path}"
-    
-    try:
-        response = requests.get(service_url, params=request.query_params)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Error forwarding request to {service_name}: {e}")
+    return _forward("GET", service_name, path, request)
 
-# TODO: Implementa una ruta genérica para redirigir peticiones POST.
+
 @router.post("/{service_name}/{path:path}")
 async def forward_post(service_name: str, path: str, request: Request):
-    if service_name not in SERVICES:
-        raise HTTPException(status_code=404, detail=f"Service '{service_name}' not found.")
-    
-    service_url = f"{SERVICES[service_name]}/{path}"
-    
-    try:
-        # Pasa los datos JSON del cuerpo de la petición.
-        response = requests.post(service_url, json=await request.json())
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Error forwarding request to {service_name}: {e}")
+    body = await request.json()
+    return _forward("POST", service_name, path, request, json_body=body)
 
-# TODO: Agrega más rutas para otros métodos HTTP (PUT, DELETE, etc.).
 
-# Incluye el router en la aplicación principal.
+@router.put("/{service_name}/{path:path}")
+async def forward_put(service_name: str, path: str, request: Request):
+    body = await request.json()
+    return _forward("PUT", service_name, path, request, json_body=body)
+
+
+@router.delete("/{service_name}/{path:path}")
+async def forward_delete(service_name: str, path: str, request: Request):
+    return _forward("DELETE", service_name, path, request)
+
+
 app.include_router(router)
 
-# Endpoint de salud para verificar el estado del gateway.
+
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "message": "API Gateway is running."}
+    return {"status": "ok", "message": "EmmaPaws API Gateway funcionando."}
