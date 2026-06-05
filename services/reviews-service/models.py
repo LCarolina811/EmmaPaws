@@ -1,51 +1,50 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, UniqueConstraint
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
+from pydantic import BaseModel, Field
+from typing import Optional, List
 
-from pydantic import BaseModel
-from typing import Optional
-
-# Define la base declarativa
 Base = declarative_base()
 
-# TODO: Crea tus modelos de datos aquí.
-# Cada clase de modelo representa una tabla en tu base de datos.
-# Debes renombrar YourModel por el nombre de la Clase según el servicio
-class YourModel(Base):
-    """
-    Plantilla de modelo de datos para un recurso.
-    Ajusta esta clase según los requisitos de tu tema.
-    """
-    __tablename__ = "[nombre_de_tu_tabla]"
 
-    # Columnas de la tabla
+class Review(Base):
+    __tablename__ = "reviews"
+
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    description = Column(String)
+    product_id = Column(Integer, nullable=False, index=True)
+    user_email = Column(String, nullable=False)
+    rating = Column(Integer, nullable=False)
+    comment = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    # TODO: Agrega más columnas según sea necesario.
-    # Por ejemplo:
-    # is_active = Column(Boolean, default=True)
-    # foreign_key_id = Column(Integer, ForeignKey("otra_tabla.id"))
+    __table_args__ = (
+        UniqueConstraint("product_id", "user_email", name="uq_review_product_user"),
+    )
 
     def __repr__(self):
-        return f"<YourModel(id={self.id}, name='{self.name}')>"
+        return f"<Review(id={self.id}, product_id={self.product_id}, rating={self.rating})>"
 
-# TODO: Define los modelos Pydantic para la validación de datos.
-# Estos modelos se usarán en los endpoints de FastAPI para validar la entrada y salida.
 
-class YourModelBase(BaseModel):
-    name: str
-    description: Optional[str] = None
-    # TODO: Agrega los campos que se necesitan para crear o actualizar un recurso.
+class ReviewBase(BaseModel):
+    product_id: int
+    user_email: str
+    rating: int = Field(..., ge=1, le=5)
+    comment: Optional[str] = None
 
-class YourModelCreate(YourModelBase):
+
+class ReviewCreate(ReviewBase):
     pass
 
-class YourModelRead(YourModelBase):
+
+class ReviewRead(ReviewBase):
     id: int
     created_at: datetime
-    
-    class Config:
-        orm_mode = True # Habilita la compatibilidad con ORM
+
+    model_config = {"from_attributes": True}
+
+
+class ReviewSummary(BaseModel):
+    product_id: int
+    total_reviews: int
+    avg_rating: float
+    reviews: List[ReviewRead]
