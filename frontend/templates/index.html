@@ -1,9 +1,35 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2>¡Bienvenido al Proyecto del Seminario!</h2>
-    <p>Este es el frontend de tu proyecto. Utiliza el API Gateway para interactuar con los microservicios.</p>
+<section class="page-header">
+    <h2>Juguetes para tus mascotas 🐶🐱</h2>
+    <p>Encuentra el juguete perfecto para tu compañero peludo.</p>
+</section>
 
-    <a href="{{ url_for('new_item') }}">Crear un nuevo ítem</a>
-
+{% if products %}
+<div class="product-grid">
+    {% for product in products %}
+    <div class="product-card">
+        {% if product.image_url %}
+        <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-img">
+        {% else %}
+        <div class="product-img-placeholder">🐾</div>
+        {% endif %}
+        <div class="product-info">
+            <span class="badge">{{ product.category }}</span>
+            <h3>{{ product.name }}</h3>
+            <p class="product-desc">{{ product.description or "" }}</p>
+            <p class="product-price">${{ "%.2f"|format(product.price) }}</p>
+            <p class="product-stock">Stock: {{ product.stock }}</p>
+            <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn">Ver detalles</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>😿 No hay productos disponibles todavía.</p>
+    <a href="{{ url_for('admin_products') }}" class="btn">Agregar productos</a>
+</div>
+{% endif %}
 {% endblock %}
