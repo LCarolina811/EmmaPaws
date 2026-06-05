@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} - Taller de Microservicios</title>
+    <title>{{ title }} — EmmaPaws</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <header>
-        <h1>{{ title }}</h1>
-        <nav>
-            <a href="{{ url_for('index') }}">Inicio</a>
+        <div class="header-inner">
+            <a href="{{ url_for('index') }}" class="brand">🐾 EmmaPaws</a>
+            <nav>
+                <a href="{{ url_for('index') }}">Catálogo</a>
+                <a href="{{ url_for('admin_products') }}">Admin</a>
             </nav>
+        </div>
     </header>
 
     <main>
@@ -19,7 +22,7 @@
     </main>
 
     <footer>
-        <p>&copy; 2025 Proyecto de Seminario</p>
+        <p>&copy; 2025 EmmaPaws — Juguetes para mascotas</p>
     </footer>
 </body>
 </html>

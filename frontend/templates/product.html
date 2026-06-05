@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if product %}
+<div class="product-detail">
+    <a href="{{ url_for('index') }}" class="back-link">← Volver al catálogo</a>
+
+    <div class="detail-top">
+        {% if product.image_url %}
+        <img src="{{ product.image_url }}" alt="{{ product.name }}" class="detail-img">
+        {% else %}
+        <div class="detail-img-placeholder">🐾</div>
+        {% endif %}
+
+        <div class="detail-info">
+            <span class="badge">{{ product.category }}</span>
+            <h2>{{ product.name }}</h2>
+            <p>{{ product.description or "" }}</p>
+            <p class="product-price">${{ "%.2f"|format(product.price) }}</p>
+            <p>Stock disponible: <strong>{{ product.stock }}</strong></p>
+            {% if product.stock > 0 %}
+            <a href="{{ url_for('order_new', product_id=product.id) }}" class="btn btn-order">🛒 Pedir ahora</a>
+            {% else %}
+            <span class="out-of-stock">Sin stock</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<section class="reviews-section">
+    <h3>Reseñas
+        {% if review_data.total_reviews > 0 %}
+        <span class="rating-summary">⭐ {{ review_data.avg_rating }} / 5
+            ({{ review_data.total_reviews }} reseña{{ "s" if review_data.total_reviews != 1 else "" }})</span>
+        {% endif %}
+    </h3>
+
+    {% if review_data.reviews %}
+    <div class="review-list">
+        {% for review in review_data.reviews %}
+        <div class="review-card">
+            <div class="review-header">
+                <span class="review-email">{{ review.user_email }}</span>
+                <span class="review-stars">{{ "⭐" * review.rating }}</span>
+            </div>
+            {% if review.comment %}
+            <p class="review-comment">{{ review.comment }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-reviews">Aún no hay reseñas. ¡Sé el primero!</p>
+    {% endif %}
+
+    <div class="review-form-wrapper">
+        <h4>Dejar una reseña</h4>
+        <form action="{{ url_for('create_review', product_id=product.id) }}" method="POST" class="review-form">
+            <label for="user_email">Tu email</label>
+            <input type="email" id="user_email" name="user_email" required placeholder="mascota@email.com">
+
+            <label for="rating">Calificación</label>
+            <select id="rating" name="rating" required>
+                <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                <option value="4">⭐⭐⭐⭐ (4)</option>
+                <option value="3">⭐⭐⭐ (3)</option>
+                <option value="2">⭐⭐ (2)</option>
+                <option value="1">⭐ (1)</option>
+            </select>
+
+            <label for="comment">Comentario (opcional)</label>
+            <textarea id="comment" name="comment" rows="3" placeholder="¿Qué te pareció el producto?"></textarea>
+
+            <button type="submit" class="btn">Enviar reseña</button>
+        </form>
+    </div>
+</section>
+{% else %}
+<p>Producto no encontrado. <a href="{{ url_for('index') }}">Volver al catálogo</a></p>
+{% endif %}
+{% endblock %}

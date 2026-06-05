@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="success-page">
+    <div class="success-icon">🎉</div>
+    <h2>¡Pedido realizado con éxito!</h2>
+    <p>Tu orden fue registrada. Pronto nos pondremos en contacto contigo.</p>
+    <a href="{{ url_for('index') }}" class="btn">Seguir comprando</a>
+</div>
+{% endblock %}
