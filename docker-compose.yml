@@ -55,11 +55,12 @@ services:
     environment:
       - DATABASE_URL=postgresql://user:password@catalog-db:5432/catalog_db
     depends_on:
-      - catalog-db
+      catalog-db:
+        condition: service_healthy
 
-  # Base de datos para Catálogo (PostgreSQL)
+  # Base de datos para Catálogo (PostgreSQL 16)
   catalog-db:
-    image: postgres:latest
+    image: postgres:16
     container_name: catalog-db
     environment:
       - POSTGRES_USER=user
@@ -69,6 +70,11 @@ services:
       - "5432:5432"
     volumes:
       - catalog_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d catalog_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   # Microservicio de Órdenes de Compra
   orders-service:
@@ -101,11 +107,12 @@ services:
     environment:
       - DATABASE_URL=postgresql://user:password@reviews-db:5432/reviews_db
     depends_on:
-      - reviews-db
+      reviews-db:
+        condition: service_healthy
 
-  # Base de datos para Reseñas (PostgreSQL)
+  # Base de datos para Reseñas (PostgreSQL 16)
   reviews-db:
-    image: postgres:latest
+    image: postgres:16
     container_name: reviews-db
     environment:
       - POSTGRES_USER=user
@@ -115,6 +122,11 @@ services:
       - "5433:5432"
     volumes:
       - reviews_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d reviews_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   auth_data:
