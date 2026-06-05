@@ -1,41 +1,70 @@
-from fastapi import FastAPI, APIRouter, HTTPException
-import os
+from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from typing import List
 
-# TODO: Importar el módulo de base de datos y los modelos
-# from .database import [tu_motor_de_base_de_datos]
-# from .models import [tus_modelos]
+from database_sql import get_db, create_db_and_tables
+from models import Product, ProductCreate, ProductRead, ProductUpdate
 
-# TODO: Configurar la URL de la base de datos desde las variables de entorno
-# DATABASE_URL = os.getenv("DATABASE_URL")
-
-app = FastAPI()
-
-# TODO: Crea una instancia del router para organizar los endpoints
+app = FastAPI(title="EmmaPaws — Catálogo de Productos")
 router = APIRouter()
 
-# TODO: Define un endpoint raíz o de salud para verificar que el servicio está funcionando
+
+@app.on_event("startup")
+def startup():
+    create_db_and_tables()
+
+
 @app.get("/")
 def read_root():
-    return {"message": "Servicio de [nombre_del_servicio] en funcionamiento."}
+    return {"message": "Servicio de Catálogo de EmmaPaws funcionando."}
+
 
 @app.get("/health")
 def health_check():
-    """Endpoint de salud para verificar el estado del servicio."""
     return {"status": "ok"}
 
-# TODO: Implementa los endpoints de tu microservicio aquí
-# Ejemplo de un endpoint GET:
-# @router.get("/[ruta_del_recurso]/")
-# async def get_[recurso]():
-#     # TODO: Agrega la lógica de tu negocio aquí
-#     return {"data": "Aquí van tus datos."}
 
-# Ejemplo de un endpoint POST:
-# @router.post("/[ruta_del_recurso]/")
-# async def create_[recurso](item: [tu_modelo_pydantic]):
-#     # TODO: Agrega la lógica para crear un nuevo recurso
-#     return {"message": "[recurso] creado exitosamente."}
+@router.get("/products/", response_model=List[ProductRead])
+def get_products(db: Session = Depends(get_db)):
+    return db.query(Product).all()
 
 
-# TODO: Incluir el router en la aplicación principal
-# app.include_router(router, prefix="/api/v1")
+@router.get("/products/{product_id}", response_model=ProductRead)
+def get_product(product_id: int, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return product
+
+
+@router.post("/products/", response_model=ProductRead, status_code=201)
+def create_product(product: ProductCreate, db: Session = Depends(get_db)):
+    db_product = Product(**product.model_dump())
+    db.add(db_product)
+    db.commit()
+    db.refresh(db_product)
+    return db_product
+
+
+@router.put("/products/{product_id}", response_model=ProductRead)
+def update_product(product_id: int, product: ProductUpdate, db: Session = Depends(get_db)):
+    db_product = db.query(Product).filter(Product.id == product_id).first()
+    if not db_product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    for key, value in product.model_dump(exclude_unset=True).items():
+        setattr(db_product, key, value)
+    db.commit()
+    db.refresh(db_product)
+    return db_product
+
+
+@router.delete("/products/{product_id}", status_code=204)
+def delete_product(product_id: int, db: Session = Depends(get_db)):
+    db_product = db.query(Product).filter(Product.id == product_id).first()
+    if not db_product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    db.delete(db_product)
+    db.commit()
+
+
+app.include_router(router, prefix="/api/v1")
